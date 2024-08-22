@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MyPlayer</string>
+    <string name="song_menu">To DO\n</string>
+    <string name="song_row_more">Extra options\n</string>
 </resources>
