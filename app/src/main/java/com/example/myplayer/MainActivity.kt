@@ -1,12 +1,9 @@
 package com.example.myplayer
 
 import android.app.Application
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Bundle
-import android.util.Size
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,8 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Observer
 import com.example.myplayer.ui.theme.MyPlayerTheme
@@ -49,10 +44,10 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             var song by rememberSaveable { mutableStateOf(emptyList<Song>()) }
-            wordViewModel.allSongs.observe(this, Observer { songs ->
+            wordViewModel.allSongs.observe(this) { songs ->
                 // Update the cached copy of the words in the adapter.
                 songs?.let { song = it }
-            })
+            }
             MyPlayerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize(), bottomBar =
                 {
@@ -78,8 +73,8 @@ class MainActivity : ComponentActivity() {
         val mp3Files = documentTree.listFiles().filter { it.isFile }
         val contentResolver = this.contentResolver
         for (rawSong in mp3Files) {
-            val uri = rawSong.uri;
-            val type = rawSong.type;
+            val uri = rawSong.uri
+            val type = rawSong.type
             if (type != "audio/mpeg")
                 continue
 

@@ -2,10 +2,8 @@ package com.example.myplayer
 
 import android.content.Context
 import android.net.Uri
-import android.view.inspector.InspectionCompanion
 import androidx.annotation.WorkerThread
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.res.imageResource
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
