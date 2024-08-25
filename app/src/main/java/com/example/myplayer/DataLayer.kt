@@ -1,31 +1,42 @@
 package com.example.myplayer
 
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.annotation.WorkerThread
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.lifecycle.LiveData
+import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
+import androidx.paging.cachedIn
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.Transaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
+import coil.ImageLoader
+import coil.decode.DataSource
+import coil.fetch.DrawableResult
+import coil.fetch.FetchResult
+import coil.fetch.Fetcher
+import coil.request.Options
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+
 
 @Entity(tableName = "songs")
 data class Song(
@@ -34,9 +45,7 @@ data class Song(
     val name: String?,
     val length: Int?  = null,
     val artist: String?  = null,
-){
-    @Ignore val cover: ImageBitmap? = null
-}
+)
 class UriConverters {
     @TypeConverter
     fun fromString(value: String?): Uri? {
@@ -60,19 +69,19 @@ interface SongDao {
     @Delete
     suspend fun delete(user: Song)
 
-    @Query("SELECT * FROM songs")
-    suspend fun getAll(): List<Song>
+    @Query("SELECT * FROM songs ORDER BY name")
+    fun getSongs(): Flow<List<Song>>
 
-
-    @Query("SELECT * FROM songs ORDER BY name ASC")
-    fun getAlphabetizedSongs(): Flow<List<Song>>
+    @Transaction
+    @Query("SELECT * FROM songs ORDER BY name")
+    fun getSongsPages(): PagingSource<Int, Song>
 
     @Query("DELETE FROM songs")
     fun deleteAll()
 }
 @Database(entities = [Song::class], version = 1, exportSchema = false)
 @TypeConverters(UriConverters::class)
-public abstract class SongRoomDatabase : RoomDatabase() {
+abstract class SongRoomDatabase : RoomDatabase() {
 
     abstract fun wordDao(): SongDao
 
@@ -100,27 +109,24 @@ public abstract class SongRoomDatabase : RoomDatabase() {
 
     private class SongDatabaseCallback(
         private val scope: CoroutineScope
-    ) : RoomDatabase.Callback() {
+    ) : Callback() {
 
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
             INSTANCE?.let { database ->
                 scope.launch {
-                    populateDatabase(database.wordDao())
+                    //populateDatabase(database.wordDao())
                 }
             }
         }
 
-        suspend fun populateDatabase(songDao: SongDao) {
-
-        }
     }
 }
 class SongRepository(private val songDao: SongDao) {
 
     // Room executes all queries on a separate thread.
     // Observed Flow will notify the observer when the data has changed.
-    val allWords: Flow<List<Song>> = songDao.getAlphabetizedSongs()
+    fun getSongsPages() = songDao.getSongsPages()
 
     // By default Room runs suspend queries off the main thread, therefore, we don't need to
     // implement anything else to ensure we're not doing long running database work
@@ -131,9 +137,20 @@ class SongRepository(private val songDao: SongDao) {
     }
 }
 
-class  SongViewModel(private val repository: SongRepository) : ViewModel()
+class  SongViewModel(private val repository: SongRepository
+) : ViewModel()
 {
-    val allSongs: LiveData<List<Song>> = repository.allWords.asLiveData()
+
+    var songListsPaged = Pager(
+        PagingConfig(
+        pageSize = 20,
+            prefetchDistance = 10,
+        enablePlaceholders = false,
+    )
+    ) {
+        repository.getSongsPages()
+    }.flow.cachedIn(viewModelScope)
+
 
     fun insert(song: Song) = viewModelScope.launch {
         repository.insert(song)
@@ -148,4 +165,42 @@ class WordViewModelFactory(private val repository: SongRepository) : ViewModelPr
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
+}
+
+class AudioFetcher(
+    private val data: Uri,
+    private val options: Options,
+    private val context: Context
+) : Fetcher {
+    override suspend fun fetch(): FetchResult? {
+        context.contentResolver.openFileDescriptor(data, "r")
+            .use { pfd ->
+
+                val mediaMetadataRetriever = MediaMetadataRetriever()
+                mediaMetadataRetriever.setDataSource(pfd?.fileDescriptor)
+
+                val art = mediaMetadataRetriever.embeddedPicture
+                val songImage =
+                    if (art != null) BitmapFactory.decodeByteArray(art, 0, art.size) else null
+                if (songImage == null)
+                    return null
+                return DrawableResult(
+                    drawable = songImage.toDrawable(context.resources),
+                    isSampled = false,
+                    dataSource = DataSource.MEMORY
+                )
+            }
+    }
+    class Factory<T: Uri>(
+        private val contextDrawable: Context
+    ) : Fetcher.Factory<T> {
+        override fun create(
+            data: T,
+            options: Options,
+            imageLoader: ImageLoader,
+        ): Fetcher {
+            return AudioFetcher(data, options, contextDrawable)
+        }
+    }
+
 }
