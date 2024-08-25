@@ -2,6 +2,8 @@
 agp = "8.5.2"
 coilCompose = "2.7.0"
 constraintlayoutCompose = "1.0.1"
+ffmpegmediametadataretrieverCore = "1.0.19"
+ffmpegmediametadataretrieverNative = "1.0.19"
 kotlin = "2.0.10"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -12,6 +14,7 @@ activityCompose = "1.8.0"
 composeBom = "2024.04.01"
 media3Exoplayer = "1.4.0"
 documentfile = "1.0.1"
+mobileFfmpegFull = "6.0-2"
 pagingRuntime = "3.3.2"
 roomCompiler = "2.6.1"
 roomKtx = "2.6.1"
@@ -21,6 +24,7 @@ roomTesting = "2.6.1"
 lifecycleLivedataKtx = "2.8.4"
 compose-plugin = "1.6.10"
 runtimeLivedata = "1.6.8"
+taglib = "1.0.0-alpha21"
 
 [libraries]
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
@@ -54,6 +58,10 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
+kotlin-exiftool = { module = "com.agaluzzi:kotlin-exiftool" }
+mobile-ffmpeg-full = { module = "com.arthenica:ffmpeg-kit-full", version.ref = "mobileFfmpegFull" }
+taglib = { module = "com.github.Kyant0:taglib", version.ref = "taglib" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

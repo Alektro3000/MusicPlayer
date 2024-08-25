@@ -51,7 +51,6 @@ android {
         }
     }
 }
-
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -98,7 +97,9 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     implementation(libs.androidx.constraintlayout.compose)
 
+
     implementation(libs.coil)
     implementation(libs.coil.compose)
 
+    implementation(libs.taglib)
 }

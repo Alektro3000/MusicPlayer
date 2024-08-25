@@ -2,6 +2,7 @@ package com.example.myplayer
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.media.ExifInterface
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.annotation.WorkerThread
@@ -17,6 +18,7 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -38,13 +40,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 
-@Entity(tableName = "songs")
+@Entity(tableName = "songs", indices =  [Index(value = ["name"], unique = true)])
 data class Song(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+
     val uri: Uri? = null,
     val name: String?,
     val length: Int?  = null,
-    val artist: String?  = null,
+
+    val displayArtist: String?  = null,
+    val artists: List<String>? = null
 )
 class UriConverters {
     @TypeConverter
@@ -57,6 +62,19 @@ class UriConverters {
         return uri?.toString()
     }
 }
+
+class StringListConverters {
+    @TypeConverter
+    fun fromString(value: String?): List<String>? {
+        return value?.split("\\")
+    }
+
+    @TypeConverter
+    fun toString(list: List<String>?): String? {
+        return list?.joinToString("\\")
+    }
+}
+
 
 @Dao
 interface SongDao {
@@ -80,7 +98,7 @@ interface SongDao {
     fun deleteAll()
 }
 @Database(entities = [Song::class], version = 1, exportSchema = false)
-@TypeConverters(UriConverters::class)
+@TypeConverters(UriConverters::class, StringListConverters::class)
 abstract class SongRoomDatabase : RoomDatabase() {
 
     abstract fun wordDao(): SongDao
@@ -143,9 +161,9 @@ class  SongViewModel(private val repository: SongRepository
 
     var songListsPaged = Pager(
         PagingConfig(
-        pageSize = 20,
-            prefetchDistance = 10,
-        enablePlaceholders = false,
+        pageSize = 100,
+            prefetchDistance = 150,
+            enablePlaceholders = false,
     )
     ) {
         repository.getSongsPages()

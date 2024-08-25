@@ -15,11 +15,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.documentfile.provider.DocumentFile
+import androidx.media3.exoplayer.MetadataRetriever
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.myplayer.ui.theme.MyPlayerTheme
+import com.kyant.taglib.TagLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+
 
 class PlayerApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob())
@@ -48,14 +52,14 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize(), bottomBar =
                 {
                     ElevatedButton(onClick = {activityLauncher.launch(null) }) {
-                        
+
                     }
                 }) { innerPadding ->
                     SongList(list,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
-                
+
             }
         }
     }
@@ -77,20 +81,28 @@ class MainActivity : ComponentActivity() {
 
             val uri = rawSong.uri
 
+            var duration: String?
+            var title: String? = null
+            var artists: List<String>? = null
+            var artist: String? = null
             contentResolver.openFileDescriptor(uri, "r").use { pfd ->
 
                 val mediaMetadataRetriever = MediaMetadataRetriever()
                 mediaMetadataRetriever.setDataSource(pfd?.fileDescriptor)
 
-                val artist =
-                    mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-                val duration =
-                    mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                val name =
-                    mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+                duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                mediaMetadataRetriever.release()
 
-                songViewModel.insert(Song(0, uri, name, duration?.toInt(), artist))
+                if(pfd == null)
+                    return@use
+
+                val properties = TagLib.getMetadata(pfd.detachFd(),false)?.propertyMap ?: return@use
+
+                title = properties["TITLE"]?.get(0)
+                artists = properties["ARTIST"]?.toList()
+                artist = (properties["DISPLAY ARTIST"]?.get(0))?:artists?.get(0)
             }
+            songViewModel.insert(Song(0, uri, title, duration?.toInt(), artist, artists))
         }
     }
 
