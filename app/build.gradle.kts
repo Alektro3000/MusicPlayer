@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.constraintlayout.compose)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
@@ -71,35 +72,28 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.exoplayer.dash)
-    implementation(libs.androidx.media3.ui)
 
     implementation(libs.androidx.room.runtime)
     annotationProcessor(libs.androidx.room.compiler)
-
-
     ksp(libs.androidx.room.compiler)
-
-    // optional - Kotlin Extensions and Coroutines support for Room
     implementation(libs.androidx.room.ktx)
-
-    // optional - Test helpers
     testImplementation(libs.androidx.room.testing)
 
-    // optional - Paging 3 Integration
+    // Paging 3 Integration
     implementation(libs.androidx.room.paging)
-
     implementation(libs.androidx.paging.runtime)
-
-    // alternatively - without Android dependencies for tests
-    testImplementation(libs.androidx.paging.common)
     implementation(libs.androidx.paging.compose)
-    implementation(libs.androidx.constraintlayout.compose)
+    testImplementation(libs.androidx.paging.common)
 
 
     implementation(libs.coil)
     implementation(libs.coil.compose)
 
     implementation(libs.taglib)
+
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
 }

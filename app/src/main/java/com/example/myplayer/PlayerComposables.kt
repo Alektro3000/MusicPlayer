@@ -37,25 +37,31 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.myplayer.ui.theme.MyPlayerTheme
+import kotlinx.coroutines.withContext
 
 @Composable
-fun SongList(files: LazyPagingItems<Song>, modifier: Modifier = Modifier) {
+fun SongList(files: LazyPagingItems<Song>, onClickSong: (id: Int) -> Unit, modifier: Modifier = Modifier) {
+
     LazyColumn(modifier = modifier,
         contentPadding = PaddingValues(vertical = 8.dp)
         ) {
         items(
             count = files.itemCount,
-            key = files.itemKey { it.id }) { id ->
+            key = files.itemKey { it.songId }) { id ->
             files[id]?.let {
                 SongRow(
                     song =  it,
                     onClickMore = { "To Do" },
-                    modifier = Modifier.clickable { "TO OD" }.padding(4.dp)
+                    modifier = Modifier.clickable {
+                        onClickSong(id)
+                    }.padding(4.dp)
                 )
 
 
@@ -70,7 +76,7 @@ fun SongRow(song: Song, modifier: Modifier = Modifier, onClickMore: ()->Unit) {
         .fillMaxWidth(1f)
         .height(70.dp)) {
 
-        val (image, title, artist, time, menu) = createRefs()
+        val (image, title, artist, menu) = createRefs()
 
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
@@ -89,15 +95,6 @@ fun SongRow(song: Song, modifier: Modifier = Modifier, onClickMore: ()->Unit) {
                     start.linkTo(parent.start)
                 }
         )
-        Text(
-            text = song.name?:"N/A",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.paddingFromBaseline(top = 26.dp, bottom = 10.dp)
-                .constrainAs(title) {
-                    start.linkTo(image.end, 5.dp)
-                }
-
-        )
 
         IconButton(
             onClick = onClickMore,
@@ -109,6 +106,19 @@ fun SongRow(song: Song, modifier: Modifier = Modifier, onClickMore: ()->Unit) {
         ) {
             Icon(Icons.Default.MoreVert, stringResource(R.string.song_row_more))
         }
+
+        Text(
+            text = song.name?:"N/A",
+            style = MaterialTheme.typography.titleMedium,
+            overflow = TextOverflow.Ellipsis,
+            softWrap = false,
+            modifier = Modifier.paddingFromBaseline(top = 26.dp, bottom = 10.dp)
+                .constrainAs(title) {
+                    linkTo(image.end, menu.start, 5.dp)
+                    width = Dimension.fillToConstraints
+                }
+
+        )
 
 
         Row(modifier = Modifier.constrainAs(artist)
@@ -141,7 +151,7 @@ fun SongRow(song: Song, modifier: Modifier = Modifier, onClickMore: ()->Unit) {
 fun SongRowPreview() {
     MyPlayerTheme {
         SongRow(Song(
-            id = 1,
+            songId = 1,
             name = "Ghosts",
             length = 193000,
             displayArtist = "Artist - with a lot of text, so sooo much"), modifier = Modifier,
@@ -155,7 +165,7 @@ fun SongRowPreview() {
 fun SongRowPreviewL() {
     MyPlayerTheme {
         SongRow(Song(
-            id = 1,
+            songId = 1,
             name = "Title",
             length = 193000,
             displayArtist = "Artist"), modifier = Modifier,

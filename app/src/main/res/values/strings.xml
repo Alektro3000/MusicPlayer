@@ -2,4 +2,6 @@
     <string name="app_name">MyPlayer</string>
     <string name="song_menu">To DO\n</string>
     <string name="song_row_more">Extra options\n</string>
+    <string name="song_title_none">N/A</string>
+    <string name="song_artist_none">N/A</string>
 </resources>
