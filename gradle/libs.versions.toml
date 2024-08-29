@@ -1,7 +1,8 @@
 [versions]
 agp = "8.5.2"
-coilCompose = "2.7.0"
 constraintlayoutCompose = "1.0.1"
+ffmpegmediametadataretrieverCoreVersion = "1.0.19"
+ffmpegmediametadataretrieverNative = "1.0.19"
 kotlin = "2.0.10"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -13,12 +14,15 @@ composeBom = "2024.04.01"
 media3Exoplayer = "1.4.0"
 documentfile = "1.0.1"
 pagingRuntime = "3.3.2"
+preferenceKtx = "1.2.1"
 room = "2.6.1"
 lifecycleLivedataKtx = "2.8.4"
 compose-plugin = "1.6.10"
 runtimeLivedata = "1.6.8"
 taglib = "1.0.0-alpha21"
-uiDesktop = "1.6.8"
+constraintlayout = "2.1.4"
+material = "1.12.0"
+coil = "2.7.0"
 
 [libraries]
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
@@ -30,13 +34,14 @@ androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "medi
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "pagingRuntime" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "pagingRuntime" }
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "pagingRuntime" }
+androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
-coil = { module = "io.coil-kt:coil" }
-coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+ffmpegmediametadataretriever-native = { module = "com.github.wseemann:FFmpegMediaMetadataRetriever-native", version.ref = "ffmpegmediametadataretrieverNative" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -53,7 +58,10 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
+material = { module = "com.google.android.material:material" , version.ref = "material"}
 taglib = { module = "com.github.Kyant0:taglib", version.ref = "taglib" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+wseemann-ffmpegmediametadataretriever-core = { module = "com.github.wseemann:FFmpegMediaMetadataRetriever-core", version.ref = "ffmpegmediametadataretrieverCoreVersion" }
 
 
 [plugins]

@@ -4,4 +4,6 @@
     <string name="song_row_more">Extra options\n</string>
     <string name="song_title_none">N/A</string>
     <string name="song_artist_none">N/A</string>
+    <string name="standard_icon_btn_desc">more info</string>
+    <string name="cover">Cover</string>
 </resources>

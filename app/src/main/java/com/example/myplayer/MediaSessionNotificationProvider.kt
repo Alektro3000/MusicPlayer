@@ -196,6 +196,7 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
         onNotificationChangedCallback: MediaNotification.Provider.Callback
     ): MediaNotification {
         createNotification(mediaSession, ImmutableList.of(), actionFactory)
+
         // notification should be created before you return here
         return MediaNotification(DEFAULT_NOTIFICATION_ID, nBuilder.build())
     }
@@ -219,9 +220,9 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
         val customLayoutWithEnabledCommandButtonsOnly =
             ImmutableList.Builder<CommandButton>()
         for (i in customLayout.indices) {
-            val button: CommandButton = customLayout.get(i)
+            val button: CommandButton = customLayout[i]
             if (button.sessionCommand != null && button.sessionCommand!!.commandCode == SessionCommand.COMMAND_CODE_CUSTOM && button.isEnabled) {
-                customLayoutWithEnabledCommandButtonsOnly.add(customLayout.get(i))
+                customLayoutWithEnabledCommandButtonsOnly.add(customLayout[i])
             }
         }
 
@@ -233,7 +234,7 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
                     session.player.availableCommands,
                     customLayoutWithEnabledCommandButtonsOnly.build(),
                     !Util.shouldShowPlayButton(
-                        session.player, session.getShowPlayButtonIfPlaybackIsSuppressed()
+                        session.player, session.showPlayButtonIfPlaybackIsSuppressed
                     )
                 ),
                 nBuilder,
@@ -242,9 +243,6 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
         // Show controls on lock screen even when user hides sensitive content.
         nBuilder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSmallIcon(R.drawable.play)
-            //.setContentIntent()
-            // Add media control buttons that invoke intents in your media service
-            // Apply the media style template
             .setStyle(
                 MediaStyleNotificationHelper.MediaStyle(session)
                     .setShowCancelButton(true)
@@ -261,9 +259,7 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
             val bitmapFuture: ListenableFuture<Bitmap>? =
                 session.bitmapLoader.loadBitmapFromMetadata(metadata)
             if (bitmapFuture != null) {
-                if (pendingOnBitmapLoadedFutureCallback != null) {
-                    pendingOnBitmapLoadedFutureCallback.discardIfPending()
-                }
+                pendingOnBitmapLoadedFutureCallback?.discardIfPending()
                 if (bitmapFuture.isDone) {
                     nBuilder.setLargeIcon(Futures.getDone<Bitmap>(bitmapFuture))
                 }

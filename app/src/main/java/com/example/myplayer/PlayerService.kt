@@ -57,14 +57,14 @@ class PlayerService : MediaSessionService() {
 
         val player: ExoPlayer = ExoPlayer.Builder(this, audioOnlyRenderersFactory)
             .setAudioAttributes(AudioAttributes.DEFAULT,true)
-
             .setSkipSilenceEnabled(true) .build()
         player.volume = 0.1f
+        player.setForegroundMode(true)
 
         val channel = NotificationChannel(
             "default_channel_id",
             "Player",
-            NotificationManager.IMPORTANCE_MIN
+            NotificationManager.IMPORTANCE_LOW
         )
         channel.description = "Player channel for foreground service notification"
 

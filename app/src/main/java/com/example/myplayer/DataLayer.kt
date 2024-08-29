@@ -206,7 +206,7 @@ class  SongViewModel(private val repository: SongRepository,
 
     var songListsPaged = Pager(
         PagingConfig(
-        pageSize = 200,
+        pageSize = 2400,
             prefetchDistance = 100,
             enablePlaceholders = false,
     )
