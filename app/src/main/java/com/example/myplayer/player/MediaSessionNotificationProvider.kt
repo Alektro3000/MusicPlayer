@@ -1,5 +1,6 @@
-package com.example.myplayer
+package com.example.myplayer.player
 
+import android.app.Notification
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
@@ -14,7 +15,6 @@ import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
 import androidx.media3.common.util.Assertions
-import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.session.CommandButton
@@ -23,6 +23,7 @@ import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaStyleNotificationHelper
 import androidx.media3.session.SessionCommand
+import com.example.myplayer.R
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
@@ -33,12 +34,21 @@ import java.util.Arrays
 class MediaSessionNotificationProvider(private var context: Context) : MediaNotification.Provider {
     private lateinit var nBuilder: NotificationCompat.Builder
 
-    private val DEFAULT_NOTIFICATION_ID: Int = 1001
 
-    public val DEFAULT_CHANNEL_ID: String = "default_channel_id"
-
+    companion object {
+            const val DEFAULT_CHANNEL_ID: String = "player_channel_id"
+            const val DEFAULT_NOTIFICATION_ID: Int = 1002
+    }
     private val pendingOnBitmapLoadedFutureCallback: OnBitmapLoadedFutureCallback? =
         null
+
+    override fun handleCustomCommand(
+        session: MediaSession,
+        action: String,
+        extras: Bundle
+    ): Boolean {
+        TODO("Not yet implemented")
+    }
 
     private fun addNotificationActions(
         mediaSession: MediaSession?,
@@ -195,18 +205,8 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
         actionFactory: MediaNotification.ActionFactory,
         onNotificationChangedCallback: MediaNotification.Provider.Callback
     ): MediaNotification {
-        createNotification(mediaSession, ImmutableList.of(), actionFactory)
-
         // notification should be created before you return here
-        return MediaNotification(DEFAULT_NOTIFICATION_ID, nBuilder.build())
-    }
-
-    override fun handleCustomCommand(
-        session: MediaSession,
-        action: String,
-        extras: Bundle
-    ): Boolean {
-        TODO("Not yet implemented")
+        return MediaNotification(DEFAULT_NOTIFICATION_ID,  createNotification(mediaSession, ImmutableList.of(), actionFactory))
     }
 
     @OptIn(UnstableApi::class)
@@ -214,7 +214,7 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
         session: MediaSession,
         customLayout: ImmutableList<CommandButton>,
         actionFactory: MediaNotification.ActionFactory
-    ) {
+    ): Notification  {
         nBuilder = NotificationCompat.Builder(context, DEFAULT_CHANNEL_ID)
 
         val customLayoutWithEnabledCommandButtonsOnly =
@@ -240,17 +240,6 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
                 nBuilder,
                 actionFactory
             )
-        // Show controls on lock screen even when user hides sensitive content.
-        nBuilder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setSmallIcon(R.drawable.play)
-            .setStyle(
-                MediaStyleNotificationHelper.MediaStyle(session)
-                    .setShowCancelButton(true)
-                    .setShowActionsInCompactView(*compactViewIndices)
-            )
-
-
-
         if (session.player.isCommandAvailable(Player.COMMAND_GET_METADATA)) {
             val metadata: MediaMetadata = session.player.mediaMetadata
             nBuilder
@@ -264,7 +253,54 @@ class MediaSessionNotificationProvider(private var context: Context) : MediaNoti
                     nBuilder.setLargeIcon(Futures.getDone<Bitmap>(bitmapFuture))
                 }
             }
-            // we don build.
+        }
+
+        val playbackStartTimeMs = getPlaybackStartTimeEpochMs(session.player)
+        val displayElapsedTimeWithChronometer = playbackStartTimeMs != C.TIME_UNSET
+
+        nBuilder
+            .setWhen(if (displayElapsedTimeWithChronometer) playbackStartTimeMs else 0L)
+            .setShowWhen(displayElapsedTimeWithChronometer)
+            .setUsesChronometer(displayElapsedTimeWithChronometer)
+
+        if (Util.SDK_INT >= 31) {
+            nBuilder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+        }
+
+        val notification =  nBuilder
+
+            /*
+            .setContentIntent(mediaSession.getSessionActivity())
+            .setDeleteIntent(
+                actionFactory.createMediaActionPendingIntent(
+                    mediaSession,
+                    Player.COMMAND_STOP.toLong()
+                )
+            )
+            */
+            .setOnlyAlertOnce(true)
+            .setSmallIcon(R.drawable.play)
+            .setStyle(
+                MediaStyleNotificationHelper.MediaStyle(session)
+                    .setShowCancelButton(true)
+                    .setShowActionsInCompactView(*compactViewIndices)
+            )
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(false)
+            .build()
+        return notification
+    }
+
+
+    private fun getPlaybackStartTimeEpochMs(player: Player): Long {
+        // Changing "showWhen" causes notification flicker if SDK_INT < 21.
+        return if ((Util.SDK_INT >= 21 && player.isPlaying
+                    && !player.isPlayingAd
+                    && !player.isCurrentMediaItemDynamic) && player.playbackParameters.speed == 1f
+        ) {
+            System.currentTimeMillis() - player.contentPosition
+        } else {
+            C.TIME_UNSET
         }
     }
 

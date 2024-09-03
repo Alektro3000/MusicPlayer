@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/mainMenuFragment">
+    <fragment
+        android:id="@+id/mainMenuFragment"
+        android:name="com.example.myplayer.MainMenuFragment"
+        android:label="MainMenuFragment" >
+        <action
+            android:id="@+id/menuToPlaylistFull"
+            app:destination="@id/playlistFullFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/playlistFullFragment"
+        android:name="com.example.myplayer.PlaylistFullFragment"
+        android:label="PlaylistFullFragment" >
+        <argument
+            android:name="id"
+            app:argType="integer" />
+        <action
+            android:id="@+id/playlistFullToSongsSelect"
+            app:destination="@id/songSelectFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/songSelectFragment"
+        android:name="com.example.myplayer.SongSelectFragment"
+        android:label="SongSelectFragment">
+        <argument
+            android:name="id"
+            app:argType="integer" />
+    </fragment>
+</navigation>

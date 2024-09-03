@@ -1,7 +1,8 @@
-package com.example.myplayer
+package com.example.myplayer.player
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.Service
 import android.content.Intent
 import android.media.audiofx.Equalizer
 import android.os.Bundle
@@ -10,6 +11,9 @@ import android.os.Looper
 import android.os.Message
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC
+import androidx.media3.common.C.USAGE_MEDIA
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -25,48 +29,31 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import com.example.myplayer.R
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 
 
 class PlayerService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
-    private lateinit var equalizer: Equalizer
-    // Handler that receives messages from the thread
-    private inner class ServiceHandler(looper: Looper) : Handler(looper) {
-
-        override fun handleMessage(msg: Message) {
-
-        }
-    }
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
-        val audioOnlyRenderersFactory =
-            RenderersFactory {
-                    handler: Handler,
-                    _: VideoRendererEventListener,
-                    audioListener: AudioRendererEventListener,
-                    _: TextOutput,
-                    _: MetadataOutput,
-                ->
-                arrayOf<Renderer>(
-                    MediaCodecAudioRenderer(this, MediaCodecSelector.DEFAULT, handler, audioListener)
-                )
-            }
 
-        val player: ExoPlayer = ExoPlayer.Builder(this, audioOnlyRenderersFactory)
-            .setAudioAttributes(AudioAttributes.DEFAULT,true)
-            .setSkipSilenceEnabled(true) .build()
+        val player: ExoPlayer = ExoPlayer.Builder(this)
+            .setAudioAttributes(AudioAttributes.Builder()
+                .setContentType(AUDIO_CONTENT_TYPE_MUSIC).setUsage(USAGE_MEDIA).build()
+                ,true)
+            .build()
         player.volume = 0.1f
-        player.setForegroundMode(true)
 
         val channel = NotificationChannel(
-            "default_channel_id",
+            MediaSessionNotificationProvider.DEFAULT_CHANNEL_ID,
             "Player",
             NotificationManager.IMPORTANCE_LOW
         )
-        channel.description = "Player channel for foreground service notification"
+        channel.description = getString(R.string.player_channel_description)
 
         val notificationManager =
             getSystemService(NotificationManager::class.java)
@@ -74,11 +61,12 @@ class PlayerService : MediaSessionService() {
 
         mediaSession = MediaSession.Builder(this, player)
             .setCallback(MyCallback()).build()
-
         this.setMediaNotificationProvider(MediaSessionNotificationProvider(this))
+
     }
 
     private inner class MyCallback : MediaSession.Callback {
+
         @OptIn(UnstableApi::class)
         override fun onConnect(
             session: MediaSession,
@@ -89,9 +77,19 @@ class PlayerService : MediaSessionService() {
                 .setAvailableSessionCommands(
                     MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
                         .build()
-                )
+                ).build()
+        }
 
-                .build()
+        @OptIn(UnstableApi::class)
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val item = mediaSession.player.currentMediaItem
+                return Futures.immediateFuture( MediaSession.MediaItemsWithStartPosition(
+                    if(item != null) listOf(item) else emptyList(),0,0
+                ))
+
         }
 
         override fun onCustomCommand(
@@ -115,24 +113,28 @@ class PlayerService : MediaSessionService() {
     ): MediaSession? = mediaSession
 
 
+    @OptIn(UnstableApi::class)
     // The user dismissed the app from the recent tasks
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player!!
-        if (!player.playWhenReady
-            || player.mediaItemCount == 0
-            || player.playbackState == Player.STATE_ENDED) {
-            // Stop the service if not playing, continue playing in the background
-            // otherwise.
+        if (mediaSession?.player?.playWhenReady != true) {
             stopSelf()
         }
     }
 
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        super.onUpdateNotification(session, startInForegroundRequired)
+    }
+
+    @OptIn(UnstableApi::class)
     override fun onDestroy() {
 
         mediaSession?.run {
+            player.stop()
             player.release()
-            release()
+            mediaSession?.release()
             mediaSession = null
+            release()
+
         }
         super.onDestroy()
     }

@@ -1,21 +1,18 @@
-package com.example.myplayer
+package com.example.myplayer.data
 
 import android.app.Application
 import android.content.Context
-import android.graphics.BitmapFactory
+import android.content.Intent
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.annotation.WorkerThread
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toDrawable
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.paging.Pager
@@ -37,10 +34,12 @@ import androidx.room.Relation
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
-import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.Upsert
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.myplayer.PlayerApplication
 import com.google.common.util.concurrent.ListenableFuture
+import com.kyant.taglib.TagLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -58,10 +57,17 @@ data class Song(
     val artists: List<String>? = null
 )
 
+data class SongIncluded(
+    @Embedded val song: Song,
+    val included: Boolean
+)
+
 @Entity(tableName = "playlists")
 data class Playlist(
     @PrimaryKey(autoGenerate = true) val playlistId: Int,
-    val playlistName: String
+    val title: String,
+    val time: Int,
+    val count: Int,
 )
 
 @Entity(tableName = "PlaylistSongCrossRef", primaryKeys = ["playlistId", "songId"])
@@ -85,34 +91,48 @@ interface SongDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg song: Song)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertSong(song: Song)
-
-    @Delete
-    suspend fun deleteSong(user: Song)
-
-    @Query("SELECT * FROM songs ORDER BY name")
-    fun getSongs(): List<Song>
-
-    @Transaction
-    @Query("SELECT * FROM songs ORDER BY name")
-    fun getSongsPages(): PagingSource<Int, Song>
-
-    @Query("DELETE FROM songs")
-    fun deleteAll()
-
-    @Transaction
-    @Query("SELECT * FROM playlists")
-    fun getPlaylistsWithSongs(): List<PlaylistWithSongs>
-
-    @Query("SELECT * FROM playlists")
-    fun getPlaylists(): Flow<List<Playlist>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlaylist(playlist: Playlist)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlaylistCrossRef(crossRef: PlaylistSongCrossRef)
+
+    @Delete
+    suspend fun deleteSong(user: Song)
+
+    @Query("SELECT * FROM songs ORDER BY name")
+    fun getSongs(): Flow<List<Song>>
+
+    @Query("SELECT songId, name, uri, displayArtist, length, " +
+            "EXISTS (SELECT * FROM playlistsongcrossref WHERE playlistsongcrossref.songId = songs.songId AND playlistId = :playlistId) AS included " +
+            "FROM songs ORDER BY name")
+    fun getSongsSelect(playlistId: Int): Flow<List<SongIncluded > >
+
+
+    @Delete
+    suspend fun deletePlaylistSong(playlistSongCrossRef: PlaylistSongCrossRef)
+
+    @Query("DELETE FROM songs")
+    fun deleteAll()
+
+    @Transaction
+    @Query("SELECT * FROM playlists")
+    fun getPlaylistsFull(): List<PlaylistWithSongs>
+
+    @Query("SELECT * FROM playlists")
+    fun getPlaylists(): Flow<List<Playlist>>
+
+    @Query("SELECT * FROM playlists")
+    fun getPlaylistsPages(): PagingSource<Int,Playlist>
+
+    @Query("SELECT * FROM playlists")
+    fun getFullPlaylistsPages(): PagingSource<Int,PlaylistWithSongs>
+
+    @Query("SELECT * FROM playlists WHERE playlistId == :id")
+    fun getPlaylistFull(id: Int): Flow<PlaylistWithSongs>
 }
 
 @Database(entities = [Song::class, Playlist::class, PlaylistSongCrossRef::class], version = 1, exportSchema = false)
@@ -165,9 +185,6 @@ abstract class SongRoomDatabase : RoomDatabase() {
 }
 class SongRepository(private val songDao: SongDao) {
 
-    // Room executes all queries on a separate thread.
-    // Observed Flow will notify the observer when the data has changed.
-    fun getSongsPages() = songDao.getSongsPages()
 
     // Room executes all queries on a separate thread.
     // Observed Flow will notify the observer when the data has changed.
@@ -177,6 +194,11 @@ class SongRepository(private val songDao: SongDao) {
     // Observed Flow will notify the observer when the data has changed.
     fun getPlaylists() = songDao.getPlaylists()
 
+    fun getPlaylistsPages() = songDao.getPlaylistsPages()
+    fun getFullPlaylistsPages() = songDao.getFullPlaylistsPages()
+    fun getSongsSelect(playlistId: Int) = songDao.getSongsSelect(playlistId)
+
+    fun getPlaylistFull(id: Int) = songDao.getPlaylistFull(id)
 
     // By default Room runs suspend queries off the main thread, therefore, we don't need to
     // implement anything else to ensure we're not doing long running database work
@@ -184,6 +206,11 @@ class SongRepository(private val songDao: SongDao) {
     @WorkerThread
     suspend fun insert(song: Song) {
         songDao.insertSong(song)
+    }
+
+    @WorkerThread
+    suspend fun deletePlaylistSong(playlistSongCrossRef: PlaylistSongCrossRef) {
+        songDao.deletePlaylistSong(playlistSongCrossRef)
     }
 
     @WorkerThread
@@ -199,29 +226,34 @@ class SongRepository(private val songDao: SongDao) {
 
 }
 
-class  SongViewModel(private val repository: SongRepository,
-    application: Application
-) : AndroidViewModel(application)
+class  DataBaseViewModel(application: Application) : AndroidViewModel(application)
 {
-
-    var songListsPaged = Pager(
-        PagingConfig(
-        pageSize = 2400,
-            prefetchDistance = 100,
-            enablePlaceholders = false,
-    )
-    ) {
-        repository.getSongsPages()
-    }.flow.cachedIn(viewModelScope)
+    private val repository: SongRepository
+        get() = getApplication<PlayerApplication>().repository
 
     fun songList() = repository.getSongs()
 
     fun playlistList() = repository.getPlaylists()
+    fun getPlaylist(id: Int) = repository.getPlaylistFull(id)
+    fun getSongsSelect(playlistId: Int) = repository.getSongsSelect(playlistId)
+
+    var playlistListsPaged = Pager(
+        PagingConfig(
+            pageSize = 240,
+            prefetchDistance = 100,
+            enablePlaceholders = false,
+        )
+    ) {
+        repository.getPlaylistsPages()
+    }.flow.cachedIn(viewModelScope)
 
     fun insert(song: Song) = viewModelScope.launch {
         repository.insert(song)
     }
 
+    fun deletePlaylistSong(playlistSongCrossRef: PlaylistSongCrossRef) = viewModelScope.launch {
+        repository.deletePlaylistSong(playlistSongCrossRef)
+    }
     fun insert(playlist: Playlist) = viewModelScope.launch {
         repository.insertPlaylist(playlist)
     }
@@ -229,7 +261,10 @@ class  SongViewModel(private val repository: SongRepository,
     fun insert(playlistSongCrossRef: PlaylistSongCrossRef) = viewModelScope.launch {
         repository.insertPlaylistSong(playlistSongCrossRef)
     }
-
+}
+class  PlayerViewModel(private val application: Application
+) : AndroidViewModel(application)
+{
 
     private lateinit var mediaControllerFuture: ListenableFuture<MediaController>
 
@@ -243,37 +278,41 @@ class  SongViewModel(private val repository: SongRepository,
             }, ContextCompat.getMainExecutor(context))
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        mediaControllerFuture.addListener({
+            val mediaController = mediaControllerFuture.get()
+            mediaController.release()
+        }, ContextCompat.getMainExecutor(getApplication()))
+
+    }
     private fun mediaController(lambda : (MediaController) -> Unit )
     {
-        val context = getApplication<Application>()
         mediaControllerFuture.addListener({
             val mediaController = mediaControllerFuture.get()
             if(mediaController != null)
                 lambda(mediaController)
-        }, ContextCompat.getMainExecutor(context))
+        }, ContextCompat.getMainExecutor(getApplication()))
 
     }
     fun addSong(song: Song)
     {
         mediaController()
-        { mediaController->
-
-            mediaController.addMediaItem(buildMediaItem(song))
-
-            mediaController.prepare()
-            mediaController.play()
+        {
+            it.addMediaItem(buildMediaItem(song))
+            it.prepare()
+            it.play()
         }
     }
     fun setSongs(id: Int, songs: List<Song>)
     {
         songs.map {  }
         mediaController()
-        { mediaController->
-
-            mediaController.setMediaItems(songs.map { buildMediaItem(it)},id,0)
-
-            mediaController.prepare()
-            mediaController.play()
+        {
+            it.setMediaItems(songs.map { buildMediaItem(it)},id,0)
+            it.prepare()
+            it.play()
         }
     }
     private fun buildMediaItem(song: Song) : MediaItem
@@ -287,29 +326,63 @@ class  SongViewModel(private val repository: SongRepository,
                     .build()
             ).build()
     }
-}
-class SongViewModelFactory(private val repository: SongRepository, private val application: Application) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SongViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return SongViewModel(repository, application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
+
 }
 
-class  PlayerViewModel(private val player: ExoPlayer
-) : ViewModel()
+class FetchViewModel(private val application: Application) : AndroidViewModel(application)
 {
+    fun fetchAudio(directoryUri: Uri? = null) {
+        val contentResolver = application.applicationContext.contentResolver
 
-}
+        val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        if( directoryUri != null)
+            contentResolver.takePersistableUriPermission(directoryUri,takeFlags)
 
-class PlayerViewModelFactory(private val player: ExoPlayer) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return PlayerViewModel(player) as T
+        val documentTree = DocumentFile.fromTreeUri(application, directoryUri ?: return) ?: return
+        val mp3Files =
+            documentTree.listFiles().filter { it.isFile && it.type?.startsWith("audio") ?: false }
+
+
+        for (rawSong in mp3Files) {
+
+            val uri = rawSong.uri
+
+            var duration: String?
+            var title: String? = null
+            var artists: List<String>? = null
+            var artist: String? = null
+            contentResolver.openFileDescriptor(uri, "r").use { pfd ->
+
+                val mediaMetadataRetriever = MediaMetadataRetriever()
+                mediaMetadataRetriever.setDataSource(pfd?.fileDescriptor)
+
+                duration =
+                    mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                mediaMetadataRetriever.release()
+
+                if (pfd == null)
+                    return@use
+
+                val properties =
+                    TagLib.getMetadata(pfd.detachFd(), false)?.propertyMap ?: return@use
+
+                title = properties["TITLE"]?.get(0)
+                artists = properties["ARTIST"]?.toList()
+                artist = (properties["DISPLAY ARTIST"]?.get(0)) ?: artists?.get(0)
+            }
+            viewModelScope.launch {
+                getApplication<PlayerApplication>().repository.insert(
+                    Song(
+                        0,
+                        uri,
+                        title,
+                        duration?.toInt(),
+                        artist,
+                        artists
+                    )
+                )
+            }
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -1,4 +1,4 @@
-package com.example.myplayer
+package com.example.myplayer.data
 
 import android.net.Uri
 import androidx.room.TypeConverter

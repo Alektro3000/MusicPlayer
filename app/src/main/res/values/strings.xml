@@ -6,4 +6,14 @@
     <string name="song_artist_none">N/A</string>
     <string name="standard_icon_btn_desc">more info</string>
     <string name="cover">Cover</string>
+    <string name="player_channel_description">Player channel for foreground service notification</string>
+    <string name="title_activity_music">music</string>
+    <string name="tab_text_1">Tab 1</string>
+    <string name="tab_text_2">Tab 2</string>
+    <string name="song_label">song</string>
+    <string name="playlist_label">playlists</string>
+    <string name="songs_label">songs</string>
+    <string name="fab_content_desc">add</string>
+    <string name="time">%1$x:%2$s</string>
+    <string name="edit_title">Edit title\n</string>
 </resources>

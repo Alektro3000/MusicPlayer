@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MyPlayer" parent="Theme.Material3.Dark" />
+    <style name="Theme.MyPlayer" parent="Theme.Material3.Dark">
+        
+    </style>
+
+    <style name="Theme.MyPlayer.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.MyPlayer.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.MyPlayer.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 </resources>
