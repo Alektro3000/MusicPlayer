@@ -1,4 +1,4 @@
-package com.example.myplayer
+package com.example.myplayer.ui.playlist
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.myplayer.R
 import com.example.myplayer.data.DataBaseViewModel
 import com.example.myplayer.data.Playlist
 import com.google.android.material.floatingactionbutton.FloatingActionButton

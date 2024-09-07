@@ -3,8 +3,11 @@ package com.example.myplayer.data
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.MediaStore
+import android.util.Log
 import androidx.annotation.WorkerThread
 import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
@@ -39,13 +42,15 @@ import androidx.room.Upsert
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.myplayer.PlayerApplication
 import com.google.common.util.concurrent.ListenableFuture
+import com.kyant.taglib.Picture
 import com.kyant.taglib.TagLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 
 
-@Entity(tableName = "songs", indices =  [Index(value = ["name"], unique = true)])
+@Entity(tableName = "songs", indices =  [Index(value = ["uri"], unique = true)])
 data class Song(
     @PrimaryKey(autoGenerate = true) val songId: Int = 0,
 
@@ -54,8 +59,37 @@ data class Song(
     val length: Int?  = null,
 
     val displayArtist: String?  = null,
-    val artists: List<String>? = null
-)
+    val artists: Array<String>? = null
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Song
+
+        if (songId != other.songId) return false
+        if (uri != other.uri) return false
+        if (name != other.name) return false
+        if (length != other.length) return false
+        if (displayArtist != other.displayArtist) return false
+        if (artists != null) {
+            if (other.artists == null) return false
+            if (!artists.contentEquals(other.artists)) return false
+        } else if (other.artists != null) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = songId
+        result = 31 * result + (uri?.hashCode() ?: 0)
+        result = 31 * result + (name?.hashCode() ?: 0)
+        result = 31 * result + (length ?: 0)
+        result = 31 * result + (displayArtist?.hashCode() ?: 0)
+        result = 31 * result + (artists?.contentHashCode() ?: 0)
+        return result
+    }
+}
 
 data class SongIncluded(
     @Embedded val song: Song,
@@ -103,10 +137,14 @@ interface SongDao {
     @Delete
     suspend fun deleteSong(user: Song)
 
+
+    @Query("SELECT * FROM songs WHERE songId = :id")
+    fun getSong(id: Int): Flow<Song>
+
     @Query("SELECT * FROM songs ORDER BY name")
     fun getSongs(): Flow<List<Song>>
 
-    @Query("SELECT songId, name, uri, displayArtist, length, " +
+    @Query("SELECT songId, name, uri, displayArtist, length, artists, " +
             "EXISTS (SELECT * FROM playlistsongcrossref WHERE playlistsongcrossref.songId = songs.songId AND playlistId = :playlistId) AS included " +
             "FROM songs ORDER BY name")
     fun getSongsSelect(playlistId: Int): Flow<List<SongIncluded > >
@@ -200,6 +238,7 @@ class SongRepository(private val songDao: SongDao) {
 
     fun getPlaylistFull(id: Int) = songDao.getPlaylistFull(id)
 
+    fun getSong(id: Int) = songDao.getSong(id)
     // By default Room runs suspend queries off the main thread, therefore, we don't need to
     // implement anything else to ensure we're not doing long running database work
     // off the main thread.
@@ -236,6 +275,8 @@ class  DataBaseViewModel(application: Application) : AndroidViewModel(applicatio
     fun playlistList() = repository.getPlaylists()
     fun getPlaylist(id: Int) = repository.getPlaylistFull(id)
     fun getSongsSelect(playlistId: Int) = repository.getSongsSelect(playlistId)
+
+    fun getSong(id: Int) = repository.getSong(id)
 
     var playlistListsPaged = Pager(
         PagingConfig(
@@ -350,7 +391,7 @@ class FetchViewModel(private val application: Application) : AndroidViewModel(ap
 
             var duration: String?
             var title: String? = null
-            var artists: List<String>? = null
+            var artists: Array<String>? = null
             var artist: String? = null
             contentResolver.openFileDescriptor(uri, "r").use { pfd ->
 
@@ -368,7 +409,7 @@ class FetchViewModel(private val application: Application) : AndroidViewModel(ap
                     TagLib.getMetadata(pfd.detachFd(), false)?.propertyMap ?: return@use
 
                 title = properties["TITLE"]?.get(0)
-                artists = properties["ARTIST"]?.toList()
+                artists = properties["ARTIST"]
                 artist = (properties["DISPLAY ARTIST"]?.get(0)) ?: artists?.get(0)
             }
             viewModelScope.launch {
@@ -383,6 +424,46 @@ class FetchViewModel(private val application: Application) : AndroidViewModel(ap
                     )
                 )
             }
+        }
+    }
+    fun updateCover(cover: Uri,song: Uri ) {
+
+        val contentResolver = application.applicationContext.contentResolver
+        contentResolver.openInputStream(cover)!!.use { coverStream ->
+            contentResolver.openFileDescriptor(song, "rw")!!.use {
+                Log.d("", if(TagLib.savePictures(
+                    it.detachFd(), arrayOf(
+                        Picture(
+                            data = coverStream.readBytes(),
+                            description = "Front Cover",
+                            pictureType = "Front Cover",
+                            mimeType = contentResolver.getType(cover) ?: "Null",
+                        )
+                    )
+                )) "successful" else "failed")
+            }
+
+        }
+    }
+
+
+    fun updateSong(song: Song)
+    {
+        val contentResolver = application.applicationContext.contentResolver
+        contentResolver.openFileDescriptor(song.uri!!, "rw")?.use { pfd ->
+            val metadata = TagLib.getMetadata(fd = pfd.dup().detachFd(), readPictures = true)!!
+
+            val map =
+                metadata.propertyMap.apply {
+                    if (song.name != null)
+                        this["TITLE"] = arrayOf(song.name)
+                    if (song.displayArtist != null)
+                        this["DISPLAY ARTIST"] =
+                            if (song.artists?.size != 1) arrayOf(song.displayArtist) else song.artists
+                    if (song.artists != null)
+                        this["ARTIST"] = song.artists
+                }
+            TagLib.savePropertyMap(pfd.detachFd(),map)
         }
     }
 }

@@ -1,36 +1,31 @@
-package com.example.myplayer
+package com.example.myplayer.ui.playlist
 
 import android.content.ComponentName
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
 import androidx.activity.addCallback
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.session.SessionToken
 import androidx.navigation.fragment.findNavController
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.myplayer.R
+import com.example.myplayer.SongAdapter
 import com.example.myplayer.data.DataBaseViewModel
 import com.example.myplayer.data.PlayerViewModel
-import com.example.myplayer.data.PlaylistSongCrossRef
 import com.example.myplayer.player.PlayerService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.lastOrNull
-import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.launch
-import okhttp3.Dispatcher
 
 class PlaylistFullFragment: Fragment(R.layout.playlist_full) {
     val dbViewModel: DataBaseViewModel by viewModels()
@@ -59,9 +54,12 @@ class PlaylistFullFragment: Fragment(R.layout.playlist_full) {
         recyclerView.adapter = adapter
         recyclerView.setLayoutManager(LinearLayoutManager(context))
 
-        lifecycleScope.launch(Dispatchers.IO){
-            dbViewModel.getPlaylist(id).collect{
-                adapter.submitList (it.songs)
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dbViewModel.getPlaylist(id).collect {
+                    adapter.submitList(it.songs)
+                    textView.text = it.playlist.title
+                }
             }
         }
 

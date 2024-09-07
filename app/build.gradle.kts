@@ -113,4 +113,5 @@ dependencies {
     implementation(libs.androidx.navigation.ui)
     implementation(libs.androidx.navigation.dynamic.features.fragment)
 
+    implementation(libs.ucrop)
 }

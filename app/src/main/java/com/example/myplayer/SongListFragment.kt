@@ -14,6 +14,7 @@ import android.widget.AdapterView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -49,8 +50,8 @@ class SongListFragment: Fragment(R.layout.songs_list) {
                 fetchViewModel.fetchAudio(result ?: return@launch)
             }.start()
         }
-        val adapter = SongAdapter(onMenuClick = { view, _, id ->
-            showMenu(view, R.menu.song_menu)
+        val adapter = SongAdapter(onMenuClick = { view, song, id ->
+            showMenu(view, R.menu.song_menu, song)
         }, onSongClick =  { _, id ->
             lifecycleScope.launch(Dispatchers.IO) {
                 viewModel.setSongs(id, dbViewModel.songList().single())
@@ -78,12 +79,17 @@ class SongListFragment: Fragment(R.layout.songs_list) {
         return view
     }
 
-    private fun showMenu(view: View, songMenu: Int) {
+    private fun showMenu(view: View, songMenu: Int, song: Song) {
         val popup = PopupMenu(requireContext(), view)
         popup.menuInflater.inflate(songMenu, popup.menu)
 
         popup.setOnMenuItemClickListener { menuItem: MenuItem ->
-            return@setOnMenuItemClickListener true
+            val bundle = bundleOf("id" to song.songId)
+            if(menuItem.itemId == R.id.edit)
+            {
+                findNavController().navigate(R.id.action_mainMenuFragment_to_songEditFragment,bundle)
+            }
+            true
         }
         popup.setOnDismissListener {
             // Respond to popup being dismissed.
@@ -99,22 +105,7 @@ class SongListFragment: Fragment(R.layout.songs_list) {
         menuInfo: ContextMenu.ContextMenuInfo?
     ) {
         super.onCreateContextMenu(menu, v, menuInfo)
-        val inflater: MenuInflater = MenuInflater(this.context)
+        val inflater = MenuInflater(this.context)
         inflater.inflate(R.menu.song_menu, menu)
-    }
-
-    override fun onContextItemSelected(item: MenuItem): Boolean {
-        val info = item.menuInfo as AdapterView.AdapterContextMenuInfo
-        return when (item.itemId) {
-            R.id.edit -> {
-                editNote(info.id)
-                true
-            }
-            else -> super.onContextItemSelected(item)
-        }
-    }
-
-    private fun editNote(id: Long) {
-
     }
 }

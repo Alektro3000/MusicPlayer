@@ -10,10 +10,13 @@
         <action
             android:id="@+id/menuToPlaylistFull"
             app:destination="@id/playlistFullFragment" />
+        <action
+            android:id="@+id/action_mainMenuFragment_to_songEditFragment"
+            app:destination="@id/songEditFragment" />
     </fragment>
     <fragment
         android:id="@+id/playlistFullFragment"
-        android:name="com.example.myplayer.PlaylistFullFragment"
+        android:name="com.example.myplayer.ui.playlist.PlaylistFullFragment"
         android:label="PlaylistFullFragment" >
         <argument
             android:name="id"
@@ -24,8 +27,19 @@
     </fragment>
     <fragment
         android:id="@+id/songSelectFragment"
-        android:name="com.example.myplayer.SongSelectFragment"
+        android:name="com.example.myplayer.ui.playlist.SongSelectFragment"
         android:label="SongSelectFragment">
+        <argument
+            android:name="id"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_songSelectFragment_to_songEditFragment"
+            app:destination="@id/songEditFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/songEditFragment"
+        android:name="com.example.myplayer.SongEditFragment"
+        android:label="SongEditFragment" >
         <argument
             android:name="id"
             app:argType="integer" />

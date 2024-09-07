@@ -18,12 +18,12 @@ class UriConverters {
 
 class StringListConverters {
     @TypeConverter
-    fun fromString(value: String?): List<String>? {
-        return value?.split("\\")
+    fun fromString(value: String?): Array<String>? {
+        return value?.split("\\")?.toTypedArray()
     }
 
     @TypeConverter
-    fun toString(list: List<String>?): String? {
+    fun toString(list: Array<String>?): String? {
         return list?.joinToString("\\")
     }
 }

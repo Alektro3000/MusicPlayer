@@ -27,6 +27,8 @@ coil = "2.7.0"
 swiperefreshlayout = "1.1.0"
 appcompat = "1.7.0"
 lifecycleViewmodelKtx = "2.8.4"
+ucrop = "2.2.8"
+universalImageLoader = "1.9.5"
 
 [libraries]
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
@@ -68,6 +70,8 @@ androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtim
 material = { module = "com.google.android.material:material" , version.ref = "material"}
 taglib = { module = "com.github.Kyant0:taglib", version.ref = "taglib" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
+universal-image-loader = { module = "com.nostra13.universalimageloader:universal-image-loader", version.ref = "universalImageLoader" }
 wseemann-ffmpegmediametadataretriever-core = { module = "com.github.wseemann:FFmpegMediaMetadataRetriever-core", version.ref = "ffmpegmediametadataretrieverCoreVersion" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
