@@ -16,4 +16,7 @@
     <string name="fab_content_desc">add</string>
     <string name="time">%1$x:%2$s</string>
     <string name="edit_title">Edit title\n</string>
+    <string name="edit_cover">edit cover</string>
+    <string name="display_artist">Artist</string>
+    <string name="song_name">Name</string>
 </resources>
