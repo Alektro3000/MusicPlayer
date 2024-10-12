@@ -4,8 +4,11 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:clickable="true"
     android:id="@+id/card"
+    android:checkable="true"
+    android:clickable="true"
+    app:checkedIconSize="0dp"
+    android:focusable="true"
     app:cardCornerRadius="0dp"
 
     app:strokeWidth="0dp">

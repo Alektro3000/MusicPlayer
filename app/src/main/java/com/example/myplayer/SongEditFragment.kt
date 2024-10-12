@@ -56,9 +56,9 @@ class SongEditFragment : Fragment(R.layout.song_edit) {
                 dbViewModel.getSong(id).collect(){
                     song = it
                     titleView.text?.clear()
-                    titleView.text?.insert(0,it.name)
+                    titleView.text?.insert(0,it.name?:"")
                     artistView.text?.clear()
-                    artistView.text?.insert(0,it.displayArtist)
+                    artistView.text?.insert(0,it.displayArtist?:"")
 
                     val request = ImageRequest.Builder(view.context)
                         .data(it.uri)

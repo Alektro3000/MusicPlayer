@@ -408,7 +408,7 @@ class FetchViewModel(private val application: Application) : AndroidViewModel(ap
                 val properties =
                     TagLib.getMetadata(pfd.detachFd(), false)?.propertyMap ?: return@use
 
-                title = properties["TITLE"]?.get(0)
+                title = (properties["TITLE"]?.get(0)) ?: rawSong.name
                 artists = properties["ARTIST"]
                 artist = (properties["DISPLAY ARTIST"]?.get(0)) ?: artists?.get(0)
             }

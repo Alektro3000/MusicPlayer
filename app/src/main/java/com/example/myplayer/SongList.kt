@@ -30,7 +30,7 @@ class SongAdapter( private val onSongClick: (Song, Int) -> Unit, private val onM
     }
 }
 
-class SongViewHolder(
+open class SongViewHolder(
     private val view: View,
     val onSongClick: (Song, Int) -> Unit,
     val onMenuClick: (View, Song, Int) -> Unit)
@@ -40,12 +40,12 @@ class SongViewHolder(
     private val artist: TextView = view.findViewById(R.id.artist)
     private val time: TextView = view.findViewById(R.id.time)
     private val cover: ImageView = view.findViewById(R.id.cover)
-    private val card: View = view.findViewById(R.id.card)
+    val card: MaterialCardView = view.findViewById(R.id.card)
     private val menu: MaterialButton = view.findViewById(R.id.menu)
 
     fun bind(song: Song, id: Int) {
-        name.text = song.name
-        artist.text = song.displayArtist
+        name.text = song.name?: view.context.getString(R.string.song_title_none)
+        artist.text = song.displayArtist?:view.context.getString(R.string.song_artist_none)
 
         val length = (song.length ?: 0) / 1000
         val seconds = (length % 60).toString().padStart(2, '0')
