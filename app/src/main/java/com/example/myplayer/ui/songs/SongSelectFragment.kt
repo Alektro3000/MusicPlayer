@@ -1,34 +1,28 @@
-package com.example.myplayer.ui.playlist
+package com.example.myplayer.ui.songs
 
-import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import androidx.activity.addCallback
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.bundleOf
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ListAdapter
 import com.example.myplayer.R
-import com.example.myplayer.data.*
+import com.example.myplayer.data.DataBaseViewModel
+import com.example.myplayer.data.PlaylistSongCrossRef
+import com.example.myplayer.data.SongIncluded
+import com.example.myplayer.ui.base.ListFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
-class SongSelectFragment: Fragment(R.layout.songs_select) {
-    private val dbViewModel: DataBaseViewModel by viewModels()
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        val view = super.onCreateView(inflater, container, savedInstanceState)!!
-        val playlistId = arguments?.getInt("id")?:return view
 
+class SongSelectFragment: ListFragment<SongIncluded, SongSelectViewHolder>(R.layout.songs_select) {
+    private val dbViewModel: DataBaseViewModel by viewModels()
+
+    override fun getAdapter(): ListAdapter<SongIncluded, SongSelectViewHolder>? {
+        val playlistId = arguments?.getInt("id")?: return null
         val adapter = SongSelectAdapter(onMenuClick = { songView, song, _ ->
             showMenu(songView, R.menu.song_menu, song)
         }, onSongClick =  { song, _ ->
@@ -37,26 +31,24 @@ class SongSelectFragment: Fragment(R.layout.songs_select) {
             } else
                 dbViewModel.insert(PlaylistSongCrossRef(playlistId, song.song.songId))
         })
-        val recyclerView: RecyclerView = view.findViewById(R.id.recyclerView)
-        recyclerView.setLayoutManager(LinearLayoutManager(context))
-        recyclerView.adapter = adapter
 
-        lifecycleScope.launch() {
+        lifecycleScope.launch {
             dbViewModel.getSongsSelect(playlistId).collect{
                 adapter.submitList(it)
             }
         }
-
+        return adapter
+    }
+    override fun addVals(view: View)
+    {
         requireActivity().onBackPressedDispatcher.addCallback(this) {
             findNavController().popBackStack()
-    }
+        }
 
         val addButton: FloatingActionButton = view.findViewById(R.id.fab)
         addButton.setOnClickListener {
             findNavController().popBackStack()
         }
-
-        return view
     }
 
     private fun showMenu(view: View, songMenu: Int, song: SongIncluded) {
@@ -76,7 +68,6 @@ class SongSelectFragment: Fragment(R.layout.songs_select) {
         }
         // Show the popup menu.
         popup.show()
-
     }
 
 }

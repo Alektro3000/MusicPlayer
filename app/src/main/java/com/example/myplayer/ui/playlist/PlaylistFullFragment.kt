@@ -18,7 +18,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myplayer.R
-import com.example.myplayer.SongAdapter
+import com.example.myplayer.ui.songs.SongAdapter
 import com.example.myplayer.data.DataBaseViewModel
 import com.example.myplayer.data.PlayerViewModel
 import com.example.myplayer.player.PlayerService
@@ -28,32 +28,34 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class PlaylistFullFragment: Fragment(R.layout.playlist_full) {
-    val dbViewModel: DataBaseViewModel by viewModels()
+    private val dbViewModel: DataBaseViewModel by viewModels()
     private val playerViewModel: PlayerViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = super.onCreateView(inflater, container, savedInstanceState)
-        val id = arguments?.getInt("id")?:return view
+    ): View {
+        val view = super.onCreateView(inflater, container, savedInstanceState)!!
+        val id = arguments?.getInt("id") ?: return view
 
         val sessionToken =
             SessionToken(requireContext(), ComponentName(requireContext(), PlayerService::class.java))
         playerViewModel.onStart(sessionToken)
 
-        val textView = view?.findViewById<TextView>(R.id.title_text) ?: return view
-
+        //Adapter
         val adapter = SongAdapter(onMenuClick = {_,_,_ -> }, onSongClick = {_,songId ->
             lifecycleScope.launch(Dispatchers.IO) {
                 playerViewModel.setSongs(songId, dbViewModel.getPlaylist(id).first().songs)
             }
         })
+
         val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view)
         recyclerView.adapter = adapter
         recyclerView.setLayoutManager(LinearLayoutManager(context))
 
+
+        val textView = view.findViewById<TextView>(R.id.title_text)
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 dbViewModel.getPlaylist(id).collect {
@@ -69,8 +71,6 @@ class PlaylistFullFragment: Fragment(R.layout.playlist_full) {
             val bundle = bundleOf("id" to id)
             findNavController().navigate(R.id.playlistFullToSongsSelect,bundle)
         }
-
-
 
         requireActivity().onBackPressedDispatcher.addCallback(this) {
             findNavController().popBackStack()

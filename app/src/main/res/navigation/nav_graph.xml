@@ -27,7 +27,7 @@
     </fragment>
     <fragment
         android:id="@+id/songSelectFragment"
-        android:name="com.example.myplayer.ui.playlist.SongSelectFragment"
+        android:name="com.example.myplayer.ui.songs.SongSelectFragment"
         android:label="SongSelectFragment">
         <argument
             android:name="id"

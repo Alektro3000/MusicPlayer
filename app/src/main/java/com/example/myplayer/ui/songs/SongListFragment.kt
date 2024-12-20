@@ -1,71 +1,62 @@
-package com.example.myplayer
+package com.example.myplayer.ui.songs
 
 import android.content.ComponentName
-import android.os.Bundle
 import android.view.ContextMenu
-import android.view.LayoutInflater
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.bundleOf
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.session.SessionToken
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.myplayer.R
 import com.example.myplayer.data.DataBaseViewModel
 import com.example.myplayer.data.FetchViewModel
 import com.example.myplayer.data.PlayerViewModel
 import com.example.myplayer.data.Song
 import com.example.myplayer.player.PlayerService
+import com.example.myplayer.ui.base.ListFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.launch
 
-class SongListFragment: Fragment(R.layout.songs_list) {
-    private val viewModel: PlayerViewModel by viewModels()
-    private val fetchViewModel: FetchViewModel by viewModels()
+class SongListFragment: ListFragment<Song,SongViewHolder>(R.layout.songs_list) {
     private val dbViewModel: DataBaseViewModel by viewModels()
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        val view = super.onCreateView(inflater, container, savedInstanceState)!!
-            val sessionToken =
-                SessionToken(requireContext(), ComponentName(requireContext(), PlayerService::class.java))
-            viewModel.onStart(sessionToken)
+    private val playerViewModel: PlayerViewModel by viewModels()
+    private val fetchViewModel: FetchViewModel by viewModels()
 
-        val activityLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { result ->
-            lifecycleScope.launch(Dispatchers.IO) {
-                fetchViewModel.fetchAudio(result ?: return@launch)
-            }.start()
-        }
-        val adapter = SongAdapter(onMenuClick = { songView, song, _ ->
+    override fun getAdapter(): ListAdapter<Song, SongViewHolder> {
+        val adapter =  SongAdapter(onMenuClick = { songView, song, _ ->
             showMenu(songView, R.menu.song_menu, song)
         }, onSongClick =  { _, id ->
             lifecycleScope.launch(Dispatchers.IO) {
-                viewModel.setSongs(id, dbViewModel.songList().single())
+                playerViewModel.setSongs(id, dbViewModel.songList().single())
             }
         })
 
-        val recyclerView: RecyclerView = view.findViewById(R.id.recyclerView)
-
-        recyclerView.setLayoutManager(LinearLayoutManager(context))
-
-        recyclerView.adapter = adapter
-        registerForContextMenu(recyclerView)
-        
         lifecycleScope.launch {
             dbViewModel.songList().collect { data ->
                 adapter.submitList(data)
             }
+        }
+        return adapter
+    }
+    override fun addVals(view: View)
+    {
+        val sessionToken =
+            SessionToken(requireContext(), ComponentName(requireContext(), PlayerService::class.java))
+        playerViewModel.onStart(sessionToken)
+
+        //Refresh on swipe
+        val activityLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { result ->
+            lifecycleScope.launch(Dispatchers.IO) {
+                fetchViewModel.fetchAudio(result ?: return@launch)
+            }.start()
         }
 
         val swipeRefreshLayout: SwipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
@@ -73,8 +64,8 @@ class SongListFragment: Fragment(R.layout.songs_list) {
             activityLauncher.launch(null) // TODO
             swipeRefreshLayout.isRefreshing = false
         }
-        return view
     }
+
 
     private fun showMenu(view: View, songMenu: Int, song: Song) {
         val popup = PopupMenu(requireContext(), view)

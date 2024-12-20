@@ -1,20 +1,17 @@
-package com.example.myplayer
+package com.example.myplayer.ui.songs
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.cardview.widget.CardView
-import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import coil.request.ImageRequest
-
 import coil.imageLoader
+import coil.request.ImageRequest
+import com.example.myplayer.R
 import com.example.myplayer.data.Song
-import com.example.myplayer.data.SongIncluded
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 

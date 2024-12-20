@@ -3,10 +3,8 @@ package com.example.myplayer.data
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.WorkerThread
 import androidx.core.content.ContextCompat
@@ -47,7 +45,6 @@ import com.kyant.taglib.TagLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import java.io.ByteArrayOutputStream
 
 
 @Entity(tableName = "songs", indices =  [Index(value = ["uri"], unique = true)])
@@ -222,8 +219,6 @@ abstract class SongRoomDatabase : RoomDatabase() {
     }
 }
 class SongRepository(private val songDao: SongDao) {
-
-
     // Room executes all queries on a separate thread.
     // Observed Flow will notify the observer when the data has changed.
     fun getSongs() = songDao.getSongs()
@@ -303,7 +298,7 @@ class  DataBaseViewModel(application: Application) : AndroidViewModel(applicatio
         repository.insertPlaylistSong(playlistSongCrossRef)
     }
 }
-class  PlayerViewModel(private val application: Application
+class  PlayerViewModel(application: Application
 ) : AndroidViewModel(application)
 {
 

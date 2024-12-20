@@ -1,26 +1,18 @@
-package com.example.myplayer.ui.playlist
+package com.example.myplayer.ui.songs
 
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
-import coil.imageLoader
-import coil.request.ImageRequest
 import com.example.myplayer.R
-import com.example.myplayer.SongViewHolder
-import com.example.myplayer.data.Song
 import com.example.myplayer.data.SongIncluded
 import com.google.android.material.card.MaterialCardView
 
 
 class SongSelectAdapter(private val onSongClick: (SongIncluded, Int) -> Unit,
                         private val onMenuClick: (View, SongIncluded, Int) -> Unit) :
-    ListAdapter<SongIncluded, SongSelectViewHolder>(SongIncludedComparator) {
+    ListAdapter<SongIncluded, SongSelectViewHolder>(SongSelectComparator) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongSelectViewHolder =
         SongSelectViewHolder.create(parent, onSongClick, onMenuClick)
@@ -34,7 +26,7 @@ class SongSelectAdapter(private val onSongClick: (SongIncluded, Int) -> Unit,
 class SongSelectViewHolder(private val view: View,
                            val onSongSelectClick: (SongIncluded, Int) -> Unit,
                             val onSongMenu: (View, SongIncluded, Int) -> Unit) :
-    SongViewHolder(view, {song, id ->
+    SongViewHolder(view, { song, id ->
         val card: MaterialCardView = view.findViewById(R.id.card)
         onSongSelectClick(SongIncluded(song,card.isChecked),id)
         card.isChecked = !card.isChecked },
@@ -44,7 +36,7 @@ class SongSelectViewHolder(private val view: View,
 
 
     fun bind(songIncluded: SongIncluded, id: Int) {
-        bind(songIncluded.song, id);
+        bind(songIncluded.song, id)
         card.isChecked = songIncluded.included
     }
 
@@ -57,7 +49,7 @@ class SongSelectViewHolder(private val view: View,
     }
 }
 
-object SongIncludedComparator : DiffUtil.ItemCallback<SongIncluded>() {
+object SongSelectComparator : DiffUtil.ItemCallback<SongIncluded>() {
     override fun areItemsTheSame(oldItem: SongIncluded, newItem: SongIncluded): Boolean =
         oldItem.song.songId == newItem.song.songId
 
